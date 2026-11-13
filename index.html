@@ -1,0 +1,312 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#256ddb">
+  <meta name="description" content="VSL Studio: phiên dịch, thu mẫu và học ngôn ngữ ký hiệu Việt Nam ngay trên điện thoại.">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="VSL Studio">
+  <title>VSL Studio</title>
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icons/icon-192.png">
+  <link rel="apple-touch-icon" href="icons/icon-192.png">
+  <link rel="stylesheet" href="app.css">
+</head>
+<body>
+  <div id="app" class="app" data-mode="translate">
+    <header class="topbar">
+      <div class="brand"><img src="icons/icon-192.png" alt="" width="28" height="28"><span>VSL Studio</span></div>
+      <div id="identity" class="pill" hidden></div>
+      <button id="installChip" class="chip install-chip" type="button" hidden>⬇ Cài app</button>
+      <button id="accountChip" class="chip" type="button" aria-label="Tài khoản">Khách</button>
+    </header>
+
+    <main class="main">
+      <section class="stage" id="stage" aria-label="Camera">
+        <video id="video" class="source-video" playsinline muted></video>
+        <canvas id="view" class="view" aria-label="Hình từ camera"></canvas>
+        <video id="clipVideo" class="source-video" playsinline muted></video>
+        <div class="stage-overlay">
+          <div id="banner" class="banner" hidden></div>
+          <div id="bigCount" class="big-count" hidden></div>
+        </div>
+        <div class="stage-tools">
+          <button id="stopCamera" class="round" type="button" title="Tắt camera" aria-label="Tắt camera">⏻</button>
+          <button id="switchCamera" class="round" type="button" title="Đổi camera trước / sau" aria-label="Đổi camera">⟲</button>
+          <span id="fps" class="fps"></span>
+        </div>
+        <div id="cameraOff" class="camera-off">
+          <p id="cameraOffText">Bấm để bật camera</p>
+          <button id="startCamera" class="primary" type="button">Bật camera</button>
+        </div>
+      </section>
+
+      <section class="panel" id="panel">
+        <div id="installBanner" class="install-banner" hidden>
+          <span class="install-banner-icon">⬇</span>
+          <p>Cài <strong>VSL Studio</strong> lên màn hình chính: mở nhanh như một ứng dụng và dùng không cần mạng.</p>
+          <div class="actions"><button id="installBannerOpen" class="primary" type="button">Cài app</button>
+            <button id="installBannerLater" class="ghost" type="button">Để sau</button></div>
+        </div>
+        <!-- Translation -->
+        <div class="pane" data-pane="translate">
+          <div class="card sentence-card">
+            <div class="sentence-head">
+              <span class="label">Câu</span>
+              <label class="switch"><input id="grammar" type="checkbox" checked><span>Ghép câu theo ngữ pháp</span></label>
+            </div>
+            <p id="sentence" class="sentence">…</p>
+            <p id="gloss" class="gloss"></p>
+            <div id="corrections" class="chips" hidden>
+              <span class="label">Đúng là:</span>
+              <div id="correctionButtons" class="chip-row"></div>
+              <button id="otherWord" class="chip ghost" type="button">Từ khác…</button>
+            </div>
+          </div>
+          <div class="card live-card">
+            <div class="live-row"><span class="label">Nhận dạng</span><strong id="liveWord">—</strong><span id="liveScore" class="muted"></span></div>
+            <div id="candidates" class="muted small"></div>
+          </div>
+          <div class="actions">
+            <button id="undoWord" type="button">Xóa từ cuối</button>
+            <button id="clearSentence" type="button">Xóa câu</button>
+            <button id="saveSign" type="button">Lưu ký hiệu vừa làm…</button>
+            <button id="speak" type="button" title="Đọc câu thành tiếng">🔊 Đọc</button>
+          </div>
+          <p id="translateStatus" class="status"></p>
+          <p id="translateHelp" class="muted small"></p>
+        </div>
+
+        <!-- Collect samples -->
+        <div class="pane" data-pane="collect" hidden>
+          <div class="segmented" role="tablist" aria-label="Nguồn mẫu">
+            <button id="sourceCamera" class="active" type="button" role="tab">Camera</button>
+            <button id="sourceVideo" type="button" role="tab">Video trong máy</button>
+          </div>
+          <div id="cameraCollect" class="pane-part">
+          <div class="card">
+            <label class="field"><span>Tên ký hiệu</span>
+              <input id="signName" list="signNames" autocomplete="off" placeholder="Ví dụ: xin chào"></label>
+            <datalist id="signNames"></datalist>
+            <p id="signHint" class="hint" hidden></p>
+            <div class="row">
+              <label class="field small"><span>Số lượt</span>
+                <input id="takes" type="number" min="1" max="10" value="3" inputmode="numeric"></label>
+              <button id="record" class="primary grow" type="button">Bắt đầu ghi</button>
+              <button id="cancelRecord" class="danger" type="button" hidden>Dừng</button>
+            </div>
+            <progress id="takeProgress" max="6" value="0" hidden></progress>
+          </div>
+          <p id="collectStatus" class="status"></p>
+          <p class="muted small" id="collectHelp"></p>
+          </div>
+          <div id="videoCollect" class="pane-part" hidden>
+            <div class="card collector-sources">
+              <h2>Thu thập đa nguồn</h2>
+              <div class="row">
+                <input id="sourceUrl" type="url" inputmode="url" autocomplete="off" placeholder="Dán link video .mp4 hoặc mã QIPEDC (VD D0001B)">
+                <button id="openUrl" type="button">Mở</button>
+              </div>
+              <div class="actions">
+                <button id="pickVideo" class="primary" type="button">Chọn video…</button>
+                <button id="openQipedc" type="button">Từ điển QIPEDC…</button>
+                <button id="saveLabelled" type="button" disabled>Lưu tất cả video có tên</button>
+                <button id="stopBatch" class="danger" type="button" hidden>Dừng</button>
+              </div>
+              <input id="videoFile" type="file" accept="video/*,.csv,.tsv,.txt,text/csv,text/plain" multiple hidden>
+              <p class="muted small">Chọn được nhiều video cùng lúc. Kèm một tệp CSV (cột tên tệp, cột nhãn) để đặt tên hàng loạt; video tải từ QIPEDC giữ tên mã (VD <code>D0001B.mp4</code>) được tự đặt tên. Trên Android còn có thể chia sẻ video từ Thư viện / Zalo vào VSL Studio. Link YouTube / TikTok chỉ thu được trên máy tính.</p>
+            </div>
+            <div id="qipedcPanel" class="card" hidden>
+              <h2>Từ điển QIPEDC (Bộ GD&amp;ĐT)</h2>
+              <div class="row">
+                <input id="qipedcSearch" type="search" placeholder="Tìm từ, ví dụ: cảm ơn" autocomplete="off">
+                <select id="qipedcTopic" aria-label="Chủ đề"></select>
+              </div>
+              <ul id="qipedcResults" class="list qipedc-results"></ul>
+              <div class="actions"><button id="qipedcAdd" class="primary" type="button">Thêm các từ đã chọn vào danh sách</button></div>
+              <p class="muted small">QIPEDC không cho trang khác đọc video của họ, nên: bấm “Mở video ↗”, lưu video về máy (Android: nút ⋮ của trình phát → Tải xuống; iPhone: chạm giữ liên kết → Tải về tệp được liên kết), rồi chọn ở “Chọn video…”. Tên tệp giữ mã nên ứng dụng tự đặt đúng tên và biến thể miền.</p>
+            </div>
+            <ul id="sourceList" class="list sources"></ul>
+            <div id="itemEditor" class="card editor" hidden>
+              <div class="editor-head">
+                <div><strong id="editorTitle"></strong><br><span id="editorInfo" class="muted small"></span></div>
+                <button id="closeEditor" class="ghost" type="button" aria-label="Đóng video">✕</button>
+              </div>
+              <div class="transport">
+                <button id="stepBack" type="button" title="Lùi 1 frame">◀︎</button>
+                <button id="playPause" type="button" title="Phát / dừng">▶︎</button>
+                <button id="stepForward" type="button" title="Tới 1 frame">▶︎|</button>
+                <span id="timeText" class="muted small"></span>
+                <span class="grow"></span>
+                <button id="zoomOut" type="button" title="Thu nhỏ dòng thời gian">−</button>
+                <button id="zoomIn" type="button" title="Phóng to dòng thời gian">＋</button>
+              </div>
+              <canvas id="timeline" class="timeline" aria-label="Dòng thời gian: chạm để tua, kéo A / B để chọn đoạn, chụm hai ngón để phóng to"></canvas>
+              <div class="actions tools">
+                <button id="setA" type="button">Đặt A</button>
+                <button id="setB" type="button">Đặt B</button>
+                <button id="toolSigner" type="button">▭ Vùng người ký</button>
+                <button id="toolText" type="button">▭ Vùng chữ</button>
+                <button id="clearRegions" type="button">Xóa vùng</button>
+                <label class="switch"><input id="liveLandmarks" type="checkbox" checked><span>Landmark</span></label>
+              </div>
+              <div class="actions">
+                <button id="scanItem" class="primary" type="button">Tìm đoạn ký</button>
+                <button id="stopScan" class="danger" type="button" hidden>Dừng</button>
+                <button id="saveChecked" type="button" disabled>Lưu các đề xuất đã chọn</button>
+              </div>
+              <progress id="scanProgress" max="1" value="0" hidden></progress>
+              <ul id="proposalList" class="proposals"></ul>
+              <div id="segmentBox" class="segment-box">
+                <p id="segmentInfo" class="muted small"></p>
+                <div id="filmstrip" class="filmstrip"></div>
+                <label class="switch"><input id="showTrajectory" type="checkbox" checked><span>Quỹ đạo tay trên hình</span></label>
+                <div class="row">
+                  <input id="segmentName" list="signNames" autocomplete="off" placeholder="Tên ký hiệu của đoạn A–B">
+                  <button id="saveSegment" class="primary" type="button">Lưu đoạn</button>
+                </div>
+                <div id="ocrSuggestions" class="chip-row"></div>
+              </div>
+            </div>
+            <p id="videoStatus" class="status"></p>
+            <p class="muted small">Video chỉ được đọc trên điện thoại, không gửi đi đâu; mẫu chỉ ghi tên tệp hoặc link công khai, không ghi đường dẫn trong máy.</p>
+          </div>
+        </div>
+
+        <!-- Data store -->
+        <div class="pane" data-pane="data" hidden>
+          <div class="row">
+            <input id="search" type="search" placeholder="Tìm ký hiệu…" aria-label="Tìm ký hiệu">
+            <button id="exportSync" type="button" title="Xuất tệp đồng bộ để nhập vào VSL Studio trên máy tính">⇪ Đồng bộ</button>
+          </div>
+          <p id="dataSummary" class="muted small"></p>
+          <p id="dataStatus" class="status"></p>
+          <ul id="signList" class="list"></ul>
+          <div id="signDetail" class="card detail" hidden>
+            <div class="row"><button id="backToList" class="ghost" type="button">← Danh sách</button><h2 id="detailTitle"></h2></div>
+            <p id="detailInfo" class="muted small"></p>
+            <ul id="sampleList" class="samples"></ul>
+            <label class="field"><span>Đổi tên / gộp vào ký hiệu</span><input id="renameInput" autocomplete="off"></label>
+            <p id="renameHint" class="hint" hidden></p>
+            <div class="actions">
+              <button id="renameSign" type="button">Đổi tên / gộp</button>
+              <button id="deleteSample" class="danger" type="button" disabled>Xóa mẫu đã chọn</button>
+              <button id="deleteSign" class="danger" type="button">Xóa cả ký hiệu</button>
+            </div>
+            <p id="detailStatus" class="status"></p>
+          </div>
+        </div>
+
+        <!-- Account -->
+        <div class="pane" data-pane="account" hidden>
+          <div id="accountActive" class="card" hidden>
+            <p>Đang đăng nhập: <strong id="activeName"></strong></p>
+            <p class="muted small">Chỉ landmark của chính bạn được dùng để phiên dịch và thu mẫu; người khác trong khung hình được vẽ màu xám và bị loại.</p>
+            <div class="actions"><button id="logout" type="button">Đăng xuất</button></div>
+          </div>
+          <div class="card">
+            <h2>Tài khoản trên máy này</h2>
+            <ul id="profileList" class="list"></ul>
+            <div class="actions">
+              <button id="newAccount" class="primary" type="button">＋ Tạo tài khoản</button>
+            </div>
+          </div>
+          <form id="accountForm" class="card" hidden>
+            <h2 id="accountFormTitle">Tạo tài khoản</h2>
+            <label class="field" id="nameField"><span>Tên</span><input id="accountName" autocomplete="off" maxlength="40"></label>
+            <label class="field"><span>Mật khẩu</span><input id="accountPassword" type="password" autocomplete="new-password"></label>
+            <label class="field" id="confirmField"><span>Nhập lại mật khẩu</span><input id="accountConfirm" type="password" autocomplete="new-password"></label>
+            <div class="actions">
+              <button id="accountCancel" type="button">Hủy</button>
+              <button id="accountSubmit" class="primary" type="submit">Tiếp tục</button>
+            </div>
+            <p id="accountStatus" class="status"></p>
+          </form>
+          <div id="enrollCard" class="card" hidden>
+            <h2>Đăng ký khuôn mặt</h2>
+            <p id="enrollInstruction" class="lead"></p>
+            <p id="enrollBins" class="muted small"></p>
+            <progress id="enrollProgress" max="120" value="0"></progress>
+            <div class="actions"><button id="enrollCancel" type="button">Hủy</button></div>
+          </div>
+          <p id="accountStatusLine" class="status"></p>
+          <p class="muted small">Mật khẩu và dữ liệu khuôn mặt chỉ lưu trên điện thoại này, không gửi đi đâu và không có trong tệp đồng bộ.</p>
+        </div>
+
+        <!-- More -->
+        <div class="pane" data-pane="more" hidden>
+          <div class="card">
+            <h2>Camera</h2>
+            <label class="switch"><input id="denseView" type="checkbox"><span>Kiểm tra Holistic (vẽ đầy đủ landmark)</span></label>
+            <label class="switch"><input id="autoLight" type="checkbox" checked><span>Tự chỉnh sáng</span></label>
+            <label class="field"><span>Bù sáng <output id="biasValue">0</output> EV</span>
+              <input id="bias" type="range" min="-2" max="2" step="0.25" value="0"></label>
+            <p id="lightAdvice" class="muted small"></p>
+          </div>
+          <div class="card">
+            <h2>Ứng dụng</h2>
+            <p id="about" class="muted small"></p>
+            <div class="actions">
+              <button id="install" class="primary" type="button">⬇ Cài ứng dụng vào màn hình chính</button>
+              <button id="shareApp" type="button">Chia sẻ ứng dụng</button>
+              <button id="update" type="button" hidden>Có bản mới — cập nhật</button>
+            </div>
+            <p id="installHelp" class="muted small"></p>
+          </div>
+          <div class="card">
+            <h2>Đồng bộ với máy tính</h2>
+            <p class="muted small">Mẫu thu trên điện thoại, ký hiệu đã đổi tên hoặc xóa được gửi về VSL Studio trên máy tính bằng tệp đồng bộ: Kho từ → “⇪ Đồng bộ”, rồi trên máy tính mở Kho dữ liệu → “Nhập từ điện thoại…”. Khi máy tính cập nhật ứng dụng điện thoại, kho mẫu mới có cả những mẫu này.</p>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <nav class="tabbar" aria-label="Chế độ">
+      <button data-tab="translate" class="active" type="button"><span class="icon">💬</span><span>Phiên dịch</span></button>
+      <button data-tab="collect" type="button"><span class="icon">⏺</span><span>Thu mẫu</span></button>
+      <button data-tab="data" type="button"><span class="icon">📚</span><span>Kho từ</span></button>
+      <button data-tab="account" type="button"><span class="icon">👤</span><span>Tài khoản</span></button>
+      <button data-tab="more" type="button"><span class="icon">⚙</span><span>Thêm</span></button>
+    </nav>
+
+    <dialog id="installDialog" class="install-dialog">
+      <div class="dialog-body">
+        <h2 id="installTitle">Cài VSL Studio</h2>
+        <p id="installDevice" class="muted small"></p>
+        <ol id="installSteps" class="steps"></ol>
+        <p id="installNote" class="muted small"></p>
+        <div class="actions">
+          <button id="installNow" class="primary" type="button" hidden>Cài đặt ngay</button>
+          <button id="copyLink" type="button">Sao chép liên kết</button>
+          <button id="shareLink" type="button">Chia sẻ ứng dụng</button>
+        </div>
+        <p id="installStatus" class="status"></p>
+        <div class="qr-box">
+          <img id="appQr" src="icons/qr.png" alt="Mã QR mở VSL Studio" width="168" height="168">
+          <p class="muted small"><span id="appAddress"></span><br>Máy khác quét mã này bằng camera để mở và cài VSL Studio.</p>
+        </div>
+        <div class="actions"><button id="installClose" type="button">Đóng</button></div>
+      </div>
+    </dialog>
+
+    <dialog id="dialog">
+      <form method="dialog" class="dialog-body">
+        <h2 id="dialogTitle"></h2>
+        <p id="dialogText" class="muted small"></p>
+        <img id="dialogImage" class="dialog-image" alt="Lần ký gần nhất" hidden>
+        <input id="dialogInput" autocomplete="off" list="signNames" hidden>
+        <div id="dialogChoices" class="chip-row"></div>
+        <p id="dialogError" class="hint"></p>
+        <div class="actions">
+          <button id="dialogCancel" type="button">Hủy</button>
+          <button id="dialogOk" value="ok" class="primary" type="submit">Đồng ý</button>
+        </div>
+      </form>
+    </dialog>
+    <div id="splash" class="splash"><img src="icons/icon-192.png" alt="" width="72" height="72"><p id="splashText">Đang tải VSL Studio…</p><progress id="splashProgress"></progress></div>
+  </div>
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>
